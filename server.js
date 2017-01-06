@@ -18,6 +18,11 @@ app.get('/posts', function(req, res) {
     Post.find().exec()
     .then(function(posts) {
 	res.send(posts);
+    })
+    .catch(function(err) {
+	console.log(err);
+	res.status(500).json({error: 'internal server error'});
+
     });
 });
 
@@ -39,12 +44,13 @@ app.post('/posts', function(req, res) {
 	    })
 	    .then(
 		function(posts){
-		    res.status(201).json(posts.display());
 		    console.log('Succesfull!');
 		})
 	    .catch(function(err) {
-		console.log(err);	    
+		 console.log(err);
+		 res.stats(500).json({error: 'Internal server error'});
 	    });
+
    } else {
         for (keys in requiredFields) {
 	    if( !(requiredFields[keys])) {
@@ -81,15 +87,15 @@ app.put('/posts/:id', function(req, res) {
 });
 
 app.delete('/posts/:id', function(req, res) {
-    Post.remove({_id: req.params.id});
-
-
+    Post.remove({_id: req.params.id})
+    .then(function(posts) {
+        res.json({message: 'Deleted ${posts}')
+    })
+    .catch(function(err) {
+	console.log(err);
+        res.status(500).json({error: 'Internal Server Error');
+    }
 });
-
-
-
-
-
 
 function startServer() {
     return new Promise(function(resolve, reject){
@@ -104,7 +110,6 @@ function startServer() {
 	   });
 	});	    
     });
-
 }
 
 
