@@ -55,11 +55,36 @@ app.post('/posts', function(req, res) {
 
 });
 
-app.get('/posts/:id', function(req, res) {
-    
+app.put('/posts/:id', function(req, res) {
+    var requiredFields = {title: null, content: null, author: null};
+    console.log(req.body.title); 
+    requiredFields.title = req.body.title;
+    requiredFields.content = req.body.content;
+    requiredFields.author = req.body.author;
 
+    console.log(requiredFields);
+
+    if(req.body.title && req.body.content && req.body.author) {
+        Post.update({ _id: req.params.id},
+	    {$set: { title: req.body.title,
+		     content: req.body.content,
+		     author: req.body.author
+		   
+       		   }
+	    }
+	);
+    } else {
+	console.log('error updating');
+
+    }    
+	
 });
 
+app.delete('/posts/:id', function(req, res) {
+    Post.remove({_id: req.params.id});
+
+
+});
 
 
 
