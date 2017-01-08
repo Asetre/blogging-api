@@ -2,22 +2,19 @@ const express = require('express');
 const app = express();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
+const {DATABASE_URL, PORT} = require('./config');
 
 const {Post} = require('./model.js');
 
 mongoose.Promise = global.Promise;
 
-
-
-var DATABSE_URL = 'mongodb://localhost/blogging-app';
-var PORT = process.env.PORT || 8000;
-
 app.use(bodyParser.json());
 
 app.get('/posts', function(req, res) {
-    Post.find().exec()
+    Post.find()
     .then(function(posts) {
-	res.send(posts);
+	console.log(posts);
+	res.send(posts)
     })
     .catch(function(err) {
 	console.log(err);
@@ -28,37 +25,22 @@ app.get('/posts', function(req, res) {
 
 app.post('/posts', function(req, res) {
    var requiredFields = {title: null, content: null, author: null}
-
-   requiredFields.title = req.body.title;
-   requiredFields.content = req.body.content;
-   requiredFields.author = req.body.author;
-
-   if(requiredFields.title && requiredFields.content && requiredFields.author){
-	   console.log(requiredFields);
-	   Post 
-	    .create({
-		title: req.body.title,
-		content: req.body.content,
-		author: req.body.author
-
-	    })
-	    .then(
-		function(posts){
-		    console.log('Succesfull!');
-		})
-	    .catch(function(err) {
-		 console.log(err);
-		 res.stats(500).json({error: 'Internal server error'});
-	    });
-
-   } else {
-        for (keys in requiredFields) {
-	    if( !(requiredFields[keys])) {
-	        console.log('Missing ' + keys);
-            }
-        }
-   }
-
+   Post 
+	   .create({
+		   title: req.body.title,
+		   content: req.body.content,
+		   author: req.body.author
+	   })
+   .then(
+		   function(posts){
+			   res.status(200).json(posts);
+		   }, function(e){
+			res.status(500).json(e);		   
+			   
+		   })
+   .catch(function(err) {
+	   res.status(500).json({error: 'Internal server error'});
+   });
 });
 
 app.put('/posts/:id', function(req, res) {
@@ -89,75 +71,51 @@ app.put('/posts/:id', function(req, res) {
 app.delete('/posts/:id', function(req, res) {
     Post.remove({_id: req.params.id})
     .then(function(posts) {
-        res.json({message: 'Deleted ${posts}')
+        res.json({message: 'Deleted ${posts'})
     })
     .catch(function(err) {
 	console.log(err);
-        res.status(500).json({error: 'Internal Server Error');
-    }
+        res.status(500).json({error: 'Internal Server Error'});
+    });
 });
 
-function startServer() {
+var server;
+
+function startServer(databaseUrl=DATABASE_URL, port=PORT) {
     return new Promise(function(resolve, reject){
-	mongoose.connect('mongodb://localhost/blogging-app', function(err){
+	mongoose.connect(databaseUrl,  function(err){
 	    if (err) {
 		return reject(err);
 	    }
-
-	   app.listen(8000, function() {
-		console.log('Your app is listening on port 8000');
+	    server = app.listen(port, function() {
+		console.log(`Your app is listening on port ${port}`);
 		resolve();
-	   });
+	    });
 	});	    
     });
 }
 
+function closeServer() {
+    return mongoose.disconnect().then(function() {
+	return new Promise(function(resolve, reject) {
+	    console.log('Closing server');
+	    server.close(function(err) {
 
-startServer();
+		if(err) {
+		    return reject(err);
+		}
 
+		resolve();
+	    });
+	});
+    });
+}
 
+if (require.main == module) {
+    startServer().catch(function(err) {
+	console.error(err);	    
+    });
+};
 
+module.exports = {app, startServer, closeServer};
 
-
-
-
-
-
-
-//var server;
-
-//function startServer(DATABASE_URL, PORT) {
-//    return new Promise(function(resolve, reject) {
-//	mongoose.connect(DATABASE_URL, function(err) {
-//	    if (err) {
-//		return reject(err);
-//	    }
-//	    
-//	    server = app.listen(PORT, function() {
-//		console.log('Your app is listening on port 8000');
-//		resolve();
-//	    })
-//	    .on('error', function(err) {
-//		mongoose.disconnect();
-//		reject(err);
-////	    });
-//	});
- //   });
-//}
-//
-//function closeServer() {
-//
- //   return mongoose.disconnect().then(function(){
-//	return new Promise(function(resolve, reject) {
-//	    console.log('Closing server');
-//	    server.close(function(err){
-//		if (err) {
-//		    return reject(err);
-//		}
-//		resolve();
-//	    });
-//	});
- //   });
-//}
-
-//startServer(DATABASE_URL, PORT);
